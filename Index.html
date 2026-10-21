@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Куб Запитань про Тварин</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            overflow: hidden;
+            touch-action: none;
+        }
+        h1, h2, h3, .font-heading {
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        /* 3D Scene Container */
+        .scene {
+            perspective: 1400px;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+
+        /* The 3D Cube */
+        .cube {
+            width: 340px;
+            height: 340px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 2s cubic-bezier(0.15, 0.85, 0.35, 1.2);
+            cursor: grab;
+        }
+
+        .cube:active {
+            cursor: grabbing;
+        }
+
+        @media (min-width: 768px) {
+            .cube {
+                width: 420px;
+                height: 420px;
+            }
+        }
+
+        /* Cube Faces with Normal, Bright, Rich Saturated Colors */
+        .cube-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            box-sizing: border-box;
+            border: 6px solid #ffffff;
+            border-radius: 28px;
+            backface-visibility: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            user-select: none;
+            text-align: center;
+            transition: filter 0.2s ease;
+        }
+
+        .cube-face:hover {
+            filter: brightness(1.04);
+        }
+
+        /* Distinct, clean, saturated normal colors (not neon) with precise translateZ for 340px/420px cube */
+        .face-1 { background-color: #dc2626; transform: rotateY(0deg) translateZ(190px); }    /* Vivid Red */
+        .face-2 { background-color: #2563eb; transform: rotateY(90deg) translateZ(190px); }   /* Royal Blue */
+        .face-3 { background-color: #16a34a; transform: rotateY(180deg) translateZ(190px); }  /* Green */
+        .face-4 { background-color: #9333ea; transform: rotateY(-90deg) translateZ(190px); }  /* Purple */
+        .face-5 { background-color: #ea580c; transform: rotateX(90deg) translateZ(190px); }   /* Bright Orange */
+        .face-6 { background-color: #0d9488; transform: rotateX(-90deg) translateZ(190px); }  /* Teal */
+
+        @media (min-width: 768px) {
+            .face-1 { transform: rotateY(0deg) translateZ(230px); }
+            .face-2 { transform: rotateY(90deg) translateZ(230px); }
+            .face-3 { transform: rotateY(180deg) translateZ(230px); }
+            .face-4 { transform: rotateY(-90deg) translateZ(230px); }
+            .face-5 { transform: rotateX(90deg) translateZ(230px); }
+            .face-6 { transform: rotateX(-90deg) translateZ(230px); }
+        }
+
+        /* Clean light modal */
+        .light-modal {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Custom scrollbar for modal */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.03);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(0,0,0,0.15);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-between select-none relative text-slate-800">
+
+    <!-- Top Header -->
+    <header class="absolute top-0 left-0 w-full p-6 flex justify-between items-center z-20 pointer-events-none">
+        <div class="flex items-center space-x-3 pointer-events-auto">
+            <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-md">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path>
+                </svg>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight text-slate-900">Куб Запитань</h1>
+                <p class="text-xs text-slate-500 font-medium">Інтерактивна гра</p>
+            </div>
+        </div>
+        <button onclick="openInfoModal()" class="pointer-events-auto px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 transition shadow-sm flex items-center space-x-2">
+            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span>Про гру</span>
+        </button>
+    </header>
+
+    <!-- Main 3D Scene Viewport -->
+    <main class="scene" id="sceneContainer">
+        <div class="cube" id="interactiveCube">
+            
+            <!-- Face 1 -->
+            <div class="cube-face face-1" onclick="selectFace(1)">
+                <span class="text-4xl mb-3">🐾</span>
+                <h2 class="text-xl sm:text-2xl font-extrabold leading-snug text-white font-heading">Хто такі тварини?</h2>
+            </div>
+
+            <!-- Face 2 -->
+            <div class="cube-face face-2" onclick="selectFace(2)">
+                <span class="text-4xl mb-3">🤝</span>
+                <h2 class="text-xl sm:text-2xl font-extrabold leading-snug text-white font-heading">Чим схожі людина і тварина?</h2>
+            </div>
+
+            <!-- Face 3 -->
+            <div class="cube-face face-3" onclick="selectFace(3)">
+                <span class="text-4xl mb-3">🧠</span>
+                <h2 class="text-xl sm:text-2xl font-extrabold leading-snug text-white font-heading">Що таке «розум»?</h2>
+            </div>
+
+            <!-- Face 4 -->
+            <div class="cube-face face-4" onclick="selectFace(4)">
+                <span class="text-4xl mb-3">❄️</span>
+                <h2 class="text-xl sm:text-2xl font-extrabold leading-snug text-white font-heading">Як тварини пристосовуються до холоду?</h2>
+            </div>
+
+            <!-- Face 5 -->
+            <div class="cube-face face-5" onclick="selectFace(5)">
+                <span class="text-4xl mb-3">🤔</span>
+                <h2 class="text-xl sm:text-2xl font-extrabold leading-snug text-white font-heading">Чи вміють тварини думати так само, як люди?</h2>
+            </div>
+
+            <!-- Face 6 -->
+            <div class="cube-face face-6" onclick="selectFace(6)">
+                <span class="text-4xl mb-3">✨</span>
+                <h2 class="text-xl sm:text-2xl font-extrabold leading-snug text-white font-heading">Цікавий факт про тварин</h2>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Bottom Action Controls -->
+    <footer class="absolute bottom-0 left-0 w-full p-6 flex flex-col sm:flex-row justify-center items-center gap-4 z-20 bg-gradient-to-t from-slate-200/80 via-slate-200/40 to-transparent">
+        <button onclick="spinCubeRandomly()" id="spinBtn" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-base shadow-lg active:scale-95 transition flex items-center justify-center space-x-3">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+            <span>Крутити куб! 🎲</span>
+        </button>
+        <button onclick="resetView()" class="w-full sm:w-auto px-6 py-4 rounded-2xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition border border-slate-200 shadow-sm flex items-center justify-center space-x-2">
+            <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"></path></svg>
+            <span>Скинути положення</span>
+        </button>
+    </footer>
+
+    <!-- Result Modal -->
+    <div id="questionModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+        <div class="light-modal w-full max-w-lg rounded-3xl p-8 shadow-2xl transform scale-95 transition-all duration-300 relative">
+            <div class="flex justify-between items-start mb-6">
+                <span id="modalCategoryTag" class="px-3.5 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider text-white bg-blue-600 shadow-sm">Запитання</span>
+                <button onclick="closeModal()" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <div class="mb-6">
+                <h3 id="modalTitle" class="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-3 font-heading leading-tight">Хто такі тварини?</h3>
+                <p id="modalDescription" class="text-slate-600 text-base sm:text-lg leading-relaxed">Обговоріть це питання разом та поділіться своїми думками й прикладами з життя.</p>
+            </div>
+
+            <div class="flex space-x-3">
+                <button onclick="spinCubeRandomly(); closeModal();" class="flex-1 py-3.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 font-bold text-sm text-white shadow-md transition">
+                    Крутити знову 🎲
+                </button>
+                <button onclick="closeModal()" class="py-3.5 px-6 rounded-xl bg-slate-100 hover:bg-slate-200 font-semibold text-sm text-slate-700 transition border border-slate-200">
+                    Закрити
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Modal -->
+    <div id="infoModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm opacity-0 pointer-events-none transition-all duration-300">
+        <div class="light-modal w-full max-w-md rounded-3xl p-8 shadow-2xl transform scale-95 transition-all duration-300">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-bold font-heading text-slate-900">Про гру</h3>
+                <button onclick="closeInfoModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <p class="text-slate-600 text-sm sm:text-base leading-relaxed mb-6">
+                Натисніть кнопку <span class="text-blue-600 font-semibold">«Крутити куб»</span> або сам куб, щоб запустити обертання. Куб зупиниться на випадковому запитанні для обговорення.
+            </p>
+            <button onclick="closeInfoModal()" class="w-full py-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-sm transition border border-slate-200">
+                Зрозуміло!
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript 3D Physics and Interactivity -->
+    <script>
+        const questionsData = {
+            1: {
+                title: "Хто такі тварини?",
+                category: "Запитання №1"
+            },
+            2: {
+                title: "Чим схожі людина і тварина?",
+                category: "Запитання №2"
+            },
+            3: {
+                title: "Що таке «розум»?",
+                category: "Запитання №3"
+            },
+            4: {
+                title: "Як тварини пристосовуються до холоду?",
+                category: "Запитання №4"
+            },
+            5: {
+                title: "Чи вміють тварини думати так само, як люди?",
+                category: "Запитання №5"
+            },
+            6: {
+                title: "Цікавий факт про тварин",
+                category: "Бонусне завдання"
+            }
+        };
+
+        const cube = document.getElementById('interactiveCube');
+        const sceneContainer = document.getElementById('sceneContainer');
+
+        const faceRotations = {
+            1: { x: 15, y: 15 },
+            2: { x: 15, y: -75 },
+            3: { x: 15, y: -165 },
+            4: { x: 15, y: 105 },
+            5: { x: -75, y: 15 },
+            6: { x: 105, y: 15 }
+        };
+
+        let currentX = 15;
+        let currentY = 15;
+        let isSpinning = false;
+
+        function updateCubeTransform(x, y, animate = false) {
+            if (animate) {
+                cube.style.transition = 'transform 2s cubic-bezier(0.15, 0.85, 0.35, 1.2)';
+            } else {
+                cube.style.transition = 'none';
+            }
+            cube.style.transform = `rotateX(${x}deg) rotateY(${y}deg)`;
+        }
+
+        updateCubeTransform(currentX, currentY);
+
+        function spinCubeRandomly() {
+            if (isSpinning) return;
+            isSpinning = true;
+
+            const targetFace = Math.floor(Math.random() * 6) + 1;
+
+            const extraSpinsX = (Math.floor(Math.random() * 3) + 2) * 360;
+            const extraSpinsY = (Math.floor(Math.random() * 3) + 2) * 360;
+
+            const baseRot = faceRotations[targetFace];
+            currentX = baseRot.x + extraSpinsX;
+            currentY = baseRot.y + extraSpinsY;
+
+            updateCubeTransform(currentX, currentY, true);
+
+            setTimeout(() => {
+                currentX = baseRot.x;
+                currentY = baseRot.y;
+                updateCubeTransform(currentX, currentY, false);
+                isSpinning = false;
+                showModal(targetFace);
+            }, 2000);
+        }
+
+        function selectFace(faceNum) {
+            if (isSpinning) return;
+            const baseRot = faceRotations[faceNum];
+            currentX = baseRot.x;
+            currentY = baseRot.y;
+            updateCubeTransform(currentX, currentY, true);
+            
+            setTimeout(() => {
+                showModal(faceNum);
+            }, 500);
+        }
+
+        function resetView() {
+            if (isSpinning) return;
+            currentX = 15;
+            currentY = 15;
+            updateCubeTransform(currentX, currentY, true);
+        }
+
+        function showModal(faceNum) {
+            const data = questionsData[faceNum];
+            if (!data) return;
+
+            document.getElementById('modalCategoryTag').innerText = data.category;
+            document.getElementById('modalTitle').innerText = data.title;
+
+            const modal = document.getElementById('questionModal');
+            const modalCard = modal.querySelector('div > div');
+
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modalCard.classList.remove('scale-95');
+            modalCard.classList.add('scale-100');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('questionModal');
+            const modalCard = modal.querySelector('div > div');
+
+            modalCard.classList.remove('scale-100');
+            modalCard.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function openInfoModal() {
+            const modal = document.getElementById('infoModal');
+            const card = modal.querySelector('div > div');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+        }
+
+        function closeInfoModal() {
+            const modal = document.getElementById('infoModal');
+            const card = modal.querySelector('div > div');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        // Mouse & Touch Drag Interaction
+        let isDragging = false;
+        let startX, startY;
+
+        sceneContainer.addEventListener('mousedown', (e) => {
+            if (isSpinning) return;
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            cube.style.transition = 'none';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging || isSpinning) return;
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+            
+            currentY += deltaX * 0.5;
+            currentX -= deltaY * 0.5;
+
+            updateCubeTransform(currentX, currentY, false);
+
+            startX = e.clientX;
+            startY = e.clientY;
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        sceneContainer.addEventListener('touchstart', (e) => {
+            if (isSpinning) return;
+            isDragging = true;
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+            cube.style.transition = 'none';
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if (!isDragging || isSpinning) return;
+            const deltaX = e.touches[0].clientX - startX;
+            const deltaY = e.touches[0].clientY - startY;
+            
+            currentY += deltaX * 0.5;
+            currentX -= deltaY * 0.5;
+
+            updateCubeTransform(currentX, currentY, false);
+
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        }, { passive: true });
+
+        window.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+    </script>
+</body>
+</html>
